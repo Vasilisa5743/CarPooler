@@ -1,0 +1,66 @@
+<html>
+<head>
+<title>trip_details.php</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<style type="text/css">
+.s0 { color: #cf8e6d;}
+.s1 { color: #bcbec4;}
+.s2 { color: #bcbec4;}
+.s3 { color: #6aab73;}
+.s4 { color: #9876aa;}
+.s5 { color: #7a7e85;}
+.s6 { color: #bcbec4;}
+.s7 { color: #d5b778;}
+.s8 { color: #bababa;}
+.s9 { color: #6aab73;}
+</style>
+</head>
+<body bgcolor="#1e1f22">
+<table CELLSPACING=0 CELLPADDING=5 COLS=1 WIDTH="100%" BGCOLOR="#606060" >
+<tr><td><center>
+<font face="Arial, Helvetica" color="#000000">
+trip_details.php</font>
+</center></td></tr></table>
+<pre><span class="s0">&lt;?php</span>
+<span class="s2">session_start();</span>
+<span class="s0">include </span><span class="s3">'includes/db.php'</span><span class="s2">;</span>
+<span class="s0">include </span><span class="s3">'templates/header.php'</span><span class="s2">;</span>
+
+<span class="s0">if </span><span class="s2">(!</span><span class="s0">isset</span><span class="s2">(</span><span class="s4">$_GET</span><span class="s2">[</span><span class="s3">'id'</span><span class="s2">])) {</span>
+    <span class="s0">die</span><span class="s2">(</span><span class="s3">&quot;ID поездки не указан.&quot;</span><span class="s2">);</span>
+<span class="s2">}</span>
+
+<span class="s4">$tripId </span><span class="s2">= </span><span class="s4">$_GET</span><span class="s2">[</span><span class="s3">'id'</span><span class="s2">];</span>
+
+<span class="s5">// Получение деталей поездки</span>
+<span class="s4">$sql </span><span class="s2">= </span><span class="s3">&quot;SELECT * FROM поездки WHERE ID_поездки = :id&quot;</span><span class="s2">;</span>
+<span class="s4">$stmt </span><span class="s2">= </span><span class="s4">$pdo</span><span class="s2">-&gt;prepare(</span><span class="s4">$sql</span><span class="s2">);</span>
+<span class="s4">$stmt</span><span class="s2">-&gt;bindValue(</span><span class="s3">':id'</span><span class="s2">, </span><span class="s4">$tripId</span><span class="s2">, PDO::PARAM_INT);</span>
+<span class="s4">$stmt</span><span class="s2">-&gt;execute();</span>
+<span class="s4">$trip </span><span class="s2">= </span><span class="s4">$stmt</span><span class="s2">-&gt;fetch(PDO::FETCH_ASSOC);</span>
+
+<span class="s0">if </span><span class="s2">(!</span><span class="s4">$trip</span><span class="s2">) {</span>
+    <span class="s0">die</span><span class="s2">(</span><span class="s3">&quot;Поездка не найдена.&quot;</span><span class="s2">);</span>
+<span class="s2">}</span>
+
+<span class="s0">?&gt;</span>
+
+    <span class="s7">&lt;main </span><span class="s8">class</span><span class="s9">=&quot;trip-details&quot;</span><span class="s7">&gt;</span>
+        <span class="s7">&lt;h2&gt;</span><span class="s6">Детали поездки</span><span class="s7">&lt;/h2&gt;</span>
+        <span class="s7">&lt;p&gt;&lt;strong&gt;</span><span class="s6">ID водителя:</span><span class="s7">&lt;/strong&gt; </span><span class="s0">&lt;?= </span><span class="s2">htmlspecialchars(</span><span class="s4">$trip</span><span class="s2">[</span><span class="s3">'ID_водителя'</span><span class="s2">]) </span><span class="s0">?&gt;</span><span class="s7">&lt;/p&gt;</span>
+        <span class="s7">&lt;p&gt;&lt;strong&gt;</span><span class="s6">Место отправки:</span><span class="s7">&lt;/strong&gt; </span><span class="s0">&lt;?= </span><span class="s2">htmlspecialchars(</span><span class="s4">$trip</span><span class="s2">[</span><span class="s3">'Место_отправки'</span><span class="s2">]) </span><span class="s0">?&gt;</span><span class="s7">&lt;/p&gt;</span>
+        <span class="s7">&lt;p&gt;&lt;strong&gt;</span><span class="s6">Место назначения:</span><span class="s7">&lt;/strong&gt; </span><span class="s0">&lt;?= </span><span class="s2">htmlspecialchars(</span><span class="s4">$trip</span><span class="s2">[</span><span class="s3">'Место_назначения'</span><span class="s2">]) </span><span class="s0">?&gt;</span><span class="s7">&lt;/p&gt;</span>
+        <span class="s7">&lt;p&gt;&lt;strong&gt;</span><span class="s6">Дата поездки:</span><span class="s7">&lt;/strong&gt; </span><span class="s0">&lt;?= </span><span class="s2">htmlspecialchars(</span><span class="s4">$trip</span><span class="s2">[</span><span class="s3">'Дата_поездки'</span><span class="s2">]) </span><span class="s0">?&gt;</span><span class="s7">&lt;/p&gt;</span>
+        <span class="s7">&lt;p&gt;&lt;strong&gt;</span><span class="s6">Свободные места:</span><span class="s7">&lt;/strong&gt; </span><span class="s0">&lt;?= </span><span class="s2">htmlspecialchars(</span><span class="s4">$trip</span><span class="s2">[</span><span class="s3">'Колличество_свободных_мест'</span><span class="s2">]) </span><span class="s0">?&gt;</span><span class="s7">&lt;/p&gt;</span>
+        <span class="s7">&lt;p&gt;&lt;strong&gt;</span><span class="s6">Цена:</span><span class="s7">&lt;/strong&gt; </span><span class="s0">&lt;?= </span><span class="s2">htmlspecialchars(</span><span class="s4">$trip</span><span class="s2">[</span><span class="s3">'Цена_поездки'</span><span class="s2">]) </span><span class="s0">?&gt; </span><span class="s6">₽</span><span class="s7">&lt;/p&gt;</span>
+
+        <span class="s0">&lt;?php if </span><span class="s2">(</span><span class="s0">isset</span><span class="s2">(</span><span class="s4">$_SESSION</span><span class="s2">[</span><span class="s3">'user_id'</span><span class="s2">])) : </span><span class="s0">?&gt;</span>
+            <span class="s7">&lt;a </span><span class="s8">href</span><span class="s9">=&quot;book_trip.php?id=</span><span class="s0">&lt;?= </span><span class="s4">$trip</span><span class="s2">[</span><span class="s3">'ID_поездки'</span><span class="s2">] </span><span class="s0">?&gt;</span><span class="s9">&quot;</span><span class="s7">&gt;</span><span class="s6">Забронировать место</span><span class="s7">&lt;/a&gt;</span>
+        <span class="s0">&lt;?php else </span><span class="s2">: </span><span class="s0">?&gt;</span>
+            <span class="s7">&lt;p&gt;</span><span class="s6">Войдите в систему, чтобы забронировать место.</span><span class="s7">&lt;/p&gt;</span>
+        <span class="s0">&lt;?php endif</span><span class="s2">; </span><span class="s0">?&gt;</span>
+    <span class="s7">&lt;/main&gt;</span>
+
+<span class="s0">&lt;?php include </span><span class="s3">'templates/footer.php'</span><span class="s2">; </span><span class="s0">?&gt;</span></pre>
+</body>
+</html>

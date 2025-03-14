@@ -1,0 +1,92 @@
+<html>
+<head>
+<title>index.php</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<style type="text/css">
+.s0 { color: #cf8e6d;}
+.s1 { color: #bcbec4;}
+.s2 { color: #bcbec4;}
+.s3 { color: #6aab73;}
+.s4 { color: #2aacb8;}
+.s5 { color: #7a7e85;}
+.s6 { color: #9876aa;}
+.s7 { color: #bcbec4;}
+.s8 { color: #d5b778;}
+.s9 { color: #7a7e85;}
+.s10 { color: #bababa;}
+.s11 { color: #6aab73;}
+</style>
+</head>
+<body bgcolor="#1e1f22">
+<table CELLSPACING=0 CELLPADDING=5 COLS=1 WIDTH="100%" BGCOLOR="#606060" >
+<tr><td><center>
+<font face="Arial, Helvetica" color="#000000">
+index.php</font>
+</center></td></tr></table>
+<pre><span class="s0">&lt;?php</span>
+
+<span class="s2">error_reporting(E_ALL);</span>
+<span class="s2">ini_set(</span><span class="s3">'display_errors'</span><span class="s2">, </span><span class="s4">1</span><span class="s2">);</span>
+
+<span class="s2">session_start();</span>
+<span class="s0">include </span><span class="s3">'includes/db.php'</span><span class="s2">;</span>
+<span class="s0">include </span><span class="s3">'templates/header.php'</span><span class="s2">;</span>
+
+<span class="s5">// Запрос к базе данных для получения списка поездок</span>
+<span class="s6">$sql </span><span class="s2">= </span><span class="s3">&quot;SELECT *  
+        FROM поездки  
+        WHERE Колличество_свободных_мест &gt; 0  
+        ORDER BY Дата_поездки ASC&quot;</span><span class="s2">;</span>
+<span class="s6">$stmt </span><span class="s2">= </span><span class="s6">$pdo</span><span class="s2">-&gt;prepare(</span><span class="s6">$sql</span><span class="s2">);</span>
+<span class="s6">$stmt</span><span class="s2">-&gt;execute();</span>
+<span class="s6">$trips </span><span class="s2">= </span><span class="s6">$stmt</span><span class="s2">-&gt;fetchAll(PDO::FETCH_ASSOC);</span>
+
+<span class="s0">?&gt;</span>
+
+    <span class="s8">&lt;main&gt;</span>
+        <span class="s8">&lt;h2&gt;</span><span class="s7">Доступные поездки</span><span class="s8">&lt;/h2&gt;</span>
+
+        <span class="s9">&lt;!-- Форма поиска --&gt;</span>
+        <span class="s8">&lt;form </span><span class="s10">action</span><span class="s11">=&quot;search.php&quot; </span><span class="s10">method</span><span class="s11">=&quot;GET&quot;</span><span class="s8">&gt;</span>
+            <span class="s8">&lt;input </span><span class="s10">type</span><span class="s11">=&quot;text&quot; </span><span class="s10">name</span><span class="s11">=&quot;query&quot; </span><span class="s10">placeholder</span><span class="s11">=&quot;Введите место отправки или назначения&quot;</span><span class="s8">&gt;</span>
+            <span class="s8">&lt;button </span><span class="s10">type</span><span class="s11">=&quot;submit&quot;</span><span class="s8">&gt;</span><span class="s7">Найти</span><span class="s8">&lt;/button&gt;</span>
+        <span class="s8">&lt;/form&gt;</span>
+
+        <span class="s9">&lt;!-- Список поездок --&gt;</span>
+        <span class="s0">&lt;?php if </span><span class="s2">(</span><span class="s0">empty</span><span class="s2">(</span><span class="s6">$trips</span><span class="s2">)) : </span><span class="s0">?&gt;</span>
+            <span class="s8">&lt;p&gt;</span><span class="s7">Нет доступных поездок.</span><span class="s8">&lt;/p&gt;</span>
+        <span class="s0">&lt;?php else </span><span class="s2">: </span><span class="s0">?&gt;</span>
+            <span class="s8">&lt;table </span><span class="s10">border</span><span class="s11">=&quot;1&quot;</span><span class="s8">&gt;</span>
+                <span class="s8">&lt;thead&gt;</span>
+                <span class="s8">&lt;tr&gt;</span>
+                    <span class="s8">&lt;th&gt;</span><span class="s7">ID_водителя</span><span class="s8">&lt;/th&gt;</span>
+                    <span class="s8">&lt;th&gt;</span><span class="s7">Место отправки</span><span class="s8">&lt;/th&gt;</span>
+                    <span class="s8">&lt;th&gt;</span><span class="s7">Место назначения</span><span class="s8">&lt;/th&gt;</span>
+                    <span class="s8">&lt;th&gt;</span><span class="s7">Дата поездки</span><span class="s8">&lt;/th&gt;</span>
+                    <span class="s8">&lt;th&gt;</span><span class="s7">Свободные места</span><span class="s8">&lt;/th&gt;</span>
+                    <span class="s8">&lt;th&gt;</span><span class="s7">Цена</span><span class="s8">&lt;/th&gt;</span>
+                    <span class="s8">&lt;th&gt;</span><span class="s7">Действия</span><span class="s8">&lt;/th&gt;</span>
+                <span class="s8">&lt;/tr&gt;</span>
+                <span class="s8">&lt;/thead&gt;</span>
+                <span class="s8">&lt;tbody&gt;</span>
+                <span class="s0">&lt;?php foreach </span><span class="s2">(</span><span class="s6">$trips </span><span class="s0">as </span><span class="s6">$trip</span><span class="s2">) : </span><span class="s0">?&gt;</span>
+                    <span class="s8">&lt;tr&gt;</span>
+                        <span class="s8">&lt;td&gt;</span><span class="s0">&lt;?= </span><span class="s2">htmlspecialchars(</span><span class="s6">$trip</span><span class="s2">[</span><span class="s3">'ID_водителя'</span><span class="s2">]) </span><span class="s0">?&gt;</span><span class="s8">&lt;/td&gt;</span>
+                        <span class="s8">&lt;td&gt;</span><span class="s0">&lt;?= </span><span class="s2">htmlspecialchars(</span><span class="s6">$trip</span><span class="s2">[</span><span class="s3">'Место_отправки'</span><span class="s2">]) </span><span class="s0">?&gt;</span><span class="s8">&lt;/td&gt;</span>
+                        <span class="s8">&lt;td&gt;</span><span class="s0">&lt;?= </span><span class="s2">htmlspecialchars(</span><span class="s6">$trip</span><span class="s2">[</span><span class="s3">'Место_назначения'</span><span class="s2">]) </span><span class="s0">?&gt;</span><span class="s8">&lt;/td&gt;</span>
+                        <span class="s8">&lt;td&gt;</span><span class="s0">&lt;?= </span><span class="s2">htmlspecialchars(</span><span class="s6">$trip</span><span class="s2">[</span><span class="s3">'Дата_поездки'</span><span class="s2">]) </span><span class="s0">?&gt;</span><span class="s8">&lt;/td&gt;</span>
+                        <span class="s8">&lt;td&gt;</span><span class="s0">&lt;?= </span><span class="s2">htmlspecialchars(</span><span class="s6">$trip</span><span class="s2">[</span><span class="s3">'Колличество_свободных_мест'</span><span class="s2">]) </span><span class="s0">?&gt;</span><span class="s8">&lt;/td&gt;</span>
+                        <span class="s8">&lt;td&gt;</span><span class="s0">&lt;?= </span><span class="s2">htmlspecialchars(</span><span class="s6">$trip</span><span class="s2">[</span><span class="s3">'Цена_поездки'</span><span class="s2">]) </span><span class="s0">?&gt; </span><span class="s7">₽</span><span class="s8">&lt;/td&gt;</span>
+                        <span class="s8">&lt;td&gt;</span>
+                            <span class="s8">&lt;a </span><span class="s10">href</span><span class="s11">=&quot;trip_details.php?id=</span><span class="s0">&lt;?= </span><span class="s6">$trip</span><span class="s2">[</span><span class="s3">'ID_поездки'</span><span class="s2">] </span><span class="s0">?&gt;</span><span class="s11">&quot;</span><span class="s8">&gt;</span><span class="s7">Посмотреть</span><span class="s8">&lt;/a&gt;</span>
+                        <span class="s8">&lt;/td&gt;</span>
+                    <span class="s8">&lt;/tr&gt;</span>
+                <span class="s0">&lt;?php endforeach</span><span class="s2">; </span><span class="s0">?&gt;</span>
+                <span class="s8">&lt;/tbody&gt;</span>
+            <span class="s8">&lt;/table&gt;</span>
+        <span class="s0">&lt;?php endif</span><span class="s2">; </span><span class="s0">?&gt;</span>
+    <span class="s8">&lt;/main&gt;</span>
+
+<span class="s0">&lt;?php include </span><span class="s3">'templates/footer.php'</span><span class="s2">; </span><span class="s0">?&gt;</span></pre>
+</body>
+</html>
