@@ -1,18 +1,32 @@
 <?php
-session_start();
-include 'includes/db.php';
 include 'templates/header.php';
+include 'includes/db.php';
 
-// Получаем параметры фильтрации из GET-запроса
+// Получаем параметры поиска и фильтрации
+$departure = isset($_GET['departure']) ? trim($_GET['departure']) : '';
+$destination = isset($_GET['destination']) ? trim($_GET['destination']) : '';
 $price = isset($_GET['price']) ? (float)$_GET['price'] : null;
 $date = isset($_GET['date']) ? $_GET['date'] : null;
 $seats = isset($_GET['seats']) ? (int)$_GET['seats'] : null;
 
-// Формируем SQL-запрос с учетом параметров фильтрации
-$sql = "SELECT * FROM поездки WHERE Колличество_свободных_мест > 0";
+// Формируем SQL-запрос
+$sql = "SELECT * FROM Поездки WHERE Колличество_свободных_мест > 0";
+$stmt = $pdo->prepare($sql);
+$stmt->execute();
+$trips = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
 $params = [];
 $conditions = [];
+
+if (!empty($departure)) {
+    $conditions[] = "Место_отправки LIKE :departure";
+    $params[':departure'] = '%' . $departure . '%';
+}
+
+if (!empty($destination)) {
+    $conditions[] = "Место_назначения LIKE :destination";
+    $params[':destination'] = '%' . $destination . '%';
+}
 
 if (!empty($price)) {
     $conditions[] = "Цена_поездки <= :price";
@@ -30,7 +44,11 @@ if (!empty($seats)) {
 }
 
 if (!empty($conditions)) {
-    $sql .= ' AND ' . implode(' AND ', $conditions);
+    $sql .= ' AND (' . implode(' OR ', $conditions) . ')';
+}
+
+if (empty($trips)) {
+    $trips = [];
 }
 
 $sql .= ' ORDER BY Дата_поездки ASC';
@@ -38,62 +56,76 @@ $sql .= ' ORDER BY Дата_поездки ASC';
 $stmt = $pdo->prepare($sql);
 $stmt->execute($params);
 $trips = $stmt->fetchAll(PDO::FETCH_ASSOC);
-
 ?>
 
-    <main>
-        <h2>Доступные поездки</h2>
+<main class="container my-5">
+    <h2 class="text-center mb-4">Доступные поездки</h2>
 
-        <!-- Форма фильтрации -->
-        <form class="filter-form" action="filter.php" method="GET">
-            <label for="price">Цена до:</label>
-            <input type="number" name="price" id="price" value="<?= htmlspecialchars($_GET['price'] ?? '') ?>" placeholder="Введите максимальную цену">
+    <!-- Форма поиска и фильтрации -->
+    <form action="index.php" method="GET" class="row g-3 align-items-center mb-4">
+        <div class="col-auto">
+            <label for="departure" class="form-label visually-hidden">Место отправки:</label>
+            <input type="text" name="departure" id="departure" class="form-control" placeholder="Место отправки" value="<?= htmlspecialchars($departure) ?>">
+        </div>
 
-            <label for="date">Дата от:</label>
-            <input type="date" name="date" id="date" value="<?= htmlspecialchars($_GET['date'] ?? '') ?>" placeholder="Выберите дату">
+        <div class="col-auto">
+            <label for="destination" class="form-label visually-hidden">Место назначения:</label>
+            <input type="text" name="destination" id="destination" class="form-control" placeholder="Место назначения" value="<?= htmlspecialchars($destination) ?>">
+        </div>
 
-            <label for="seats">Минимальное количество мест:</label>
-            <input type="number" name="seats" id="seats" value="<?= htmlspecialchars($_GET['seats'] ?? '') ?>" placeholder="Введите количество мест">
+        <div class="col-auto">
+            <label for="price" class="form-label visually-hidden">Цена до:</label>
+            <input type="number" name="price" id="price" class="form-control" placeholder="Цена до" value="<?= htmlspecialchars($price ?? '') ?>">
+        </div>
 
-            <button type="submit">Применить фильтр</button>
+        <div class="col-auto">
+            <label for="date" class="form-label visually-hidden">Дата от:</label>
+            <input type="date" name="date" id="date" class="form-control" value="<?= htmlspecialchars($date ?? '') ?>">
+        </div>
 
-            <a href="filter.php" class="reset-button">Сбросить фильтры</a>
-        </form>
+        <div class="col-auto">
+            <label for="seats" class="form-label visually-hidden">Мин. места:</label>
+            <input type="number" name="seats" id="seats" class="form-control" placeholder="Мин. места" value="<?= htmlspecialchars($seats ?? '') ?>">
+        </div>
 
-        <!-- Результаты фильтрации -->
-        <?php if (empty($trips)) : ?>
-            <p>По вашему запросу ничего не найдено.</p>
-        <?php else : ?>
-            <div class="trip-grid">
-                <?php foreach ($trips as $trip) : ?>
-                    <div class="trip-card">
+        <div class="col-auto">
+            <button type="submit" class="btn btn-primary">Применить</button>
+        </div>
 
-                        <!-- Заголовок маршрута -->
-                        <h3><?= htmlspecialchars($trip['Место_отправки']) ?> → <?= htmlspecialchars($trip['Место_назначения']) ?></h3>
+        <div class="col-auto">
+            <a href="index.php" class="btn btn-outline-secondary">Сбросить</a>
+        </div>
+    </form>
 
-                        <!-- Дата поездки -->
-                        <p><strong>Дата:</strong> <?= htmlspecialchars($trip['Дата_поездки']) ?></p>
-
-                        <!-- Количество свободных мест -->
-                        <p><strong>Свободные места:</strong> <?= htmlspecialchars($trip['Колличество_свободных_мест']) ?></p>
-
-                        <!-- Цена -->
-                        <p><strong>Цена:</strong> <?= htmlspecialchars($trip['Цена_поездки']) ?> ₽</p>
-
-                        <!-- Действия -->
-                        <div class="details">
-                            <?php if (isset($_SESSION['user_id'])) : ?>
-                                <a href="trip_details.php?id=<?= htmlspecialchars($trip['ID_поездки']) ?>">
-                                    <button>Посмотреть</button>
-                                </a>
-                            <?php else : ?>
-                                <span>Войдите, чтобы забронировать место</span>
-                            <?php endif; ?>
+    <!-- Список поездок в виде карточек -->
+    <?php if (empty($trips)) : ?>
+        <p class="text-center text-muted">Нет доступных поездок.</p>
+    <?php else : ?>
+        <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
+            <?php foreach ($trips as $trip) : ?>
+                <div class="col">
+                    <div class="card shadow-sm h-100">
+                        <div class="card-body">
+                            <h5 class="card-title"><?= htmlspecialchars($trip['Место_отправки']) ?> → <?= htmlspecialchars($trip['Место_назначения']) ?></h5>
+                            <p class="card-text"><strong>Дата:</strong> <?= htmlspecialchars($trip['Дата_поездки']) ?></p>
+                            <p class="card-text"><strong>Свободные места:</strong> <?= htmlspecialchars($trip['Колличество_свободных_мест']) ?></p>
+                            <p class="card-text"><strong>Цена:</strong> <?= htmlspecialchars($trip['Цена_поездки']) ?> ₽</p>
+                            <div class="d-grid gap-2">
+                                <?php if (isset($_SESSION['user_id'])) : ?>
+                                    <a href="trip_details.php?id=<?= htmlspecialchars($trip['ID_поездки']) ?>" class="btn btn-primary">Посмотреть</a>
+                                <?php else : ?>
+                                    <a href="login.php" class="btn btn-outline-primary">Войдите, чтобы забронировать место</a>
+                                <?php endif; ?>
+                            </div>
                         </div>
                     </div>
-                <?php endforeach; ?>
-            </div>
-        <?php endif; ?>
-    </main>
+                </div>
+            <?php endforeach; ?>
+        </div>
+    <?php endif; ?>
+</main>
 
 <?php include 'templates/footer.php'; ?>
+
+<!-- Bootstrap JS and dependencies -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>

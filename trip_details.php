@@ -1,41 +1,41 @@
 <?php
-session_start();
-include 'includes/db.php';
 include 'templates/header.php';
+include 'includes/db.php';
 
 if (!isset($_GET['id'])) {
-    die("ID поездки не указан.");
+    header('Location: index.php');
+    exit;
 }
 
-$tripId = $_GET['id'];
-
-// Получение деталей поездки
-$sql = "SELECT * FROM поездки WHERE ID_поездки = :id";
-$stmt = $pdo->prepare($sql);
-$stmt->bindValue(':id', $tripId, PDO::PARAM_INT);
-$stmt->execute();
+$trip_id = (int)$_GET['id'];
+$stmt = $pdo->prepare("SELECT * FROM Поездки WHERE ID_поездки = :id");
+$stmt->execute(['id' => $trip_id]);
 $trip = $stmt->fetch(PDO::FETCH_ASSOC);
 
 if (!$trip) {
-    die("Поездка не найдена.");
+    header('Location: index.php');
+    exit;
 }
-
 ?>
 
-    <main class="trip-details">
-        <h2>Детали поездки</h2>
-        <p><strong>ID водителя:</strong> <?= htmlspecialchars($trip['ID_водителя']) ?></p>
-        <p><strong>Место отправки:</strong> <?= htmlspecialchars($trip['Место_отправки']) ?></p>
-        <p><strong>Место назначения:</strong> <?= htmlspecialchars($trip['Место_назначения']) ?></p>
-        <p><strong>Дата поездки:</strong> <?= htmlspecialchars($trip['Дата_поездки']) ?></p>
-        <p><strong>Свободные места:</strong> <?= htmlspecialchars($trip['Колличество_свободных_мест']) ?></p>
-        <p><strong>Цена:</strong> <?= htmlspecialchars($trip['Цена_поездки']) ?> ₽</p>
-
-        <?php if (isset($_SESSION['user_id'])) : ?>
-            <a href="book_trip.php?id=<?= $trip['ID_поездки'] ?>">Забронировать место</a>
-        <?php else : ?>
-            <p>Войдите в систему, чтобы забронировать место.</p>
-        <?php endif; ?>
+    <main class="container my-5">
+        <div class="row justify-content-center">
+            <div class="col-md-6 col-lg-4">
+                <div class="card shadow-sm p-4">
+                    <h2 class="text-center mb-4">Детали поездки</h2>
+                    <h5 class="card-title text-center"><?= htmlspecialchars($trip['Место_отправки']) ?> → <?= htmlspecialchars($trip['Место_назначения']) ?></h5>
+                    <p class="card-text"><strong>Дата:</strong> <?= htmlspecialchars($trip['Дата_поездки']) ?></p>
+                    <p class="card-text"><strong>Свободные места:</strong> <?= htmlspecialchars($trip['Колличество_свободных_мест']) ?></p>
+                    <p class="card-text"><strong>Цена:</strong> <?= htmlspecialchars($trip['Цена_поездки']) ?> ₽</p>
+                    <?php if (isset($_SESSION['user_id'])) : ?>
+                        <a href="#" class="btn btn-primary w-100">Забронировать место</a>
+                    <?php else : ?>
+                        <p class="text-center">Войдите, чтобы забронировать место.</p>
+                        <a href="login.php" class="btn btn-outline-primary w-100">Войти</a>
+                    <?php endif; ?>
+                </div>
+            </div>
+        </div>
     </main>
 
 <?php include 'templates/footer.php'; ?>
