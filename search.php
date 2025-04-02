@@ -8,7 +8,7 @@ $query = isset($_GET['query']) ? $_GET['query'] : '';
 // SQL-запрос для поиска поездок
 $sql = "SELECT * FROM поездки 
         WHERE (Место_отправки LIKE :query OR Место_назначения LIKE :query) 
-        AND Колличество_свободных_мест > 0 
+        AND Количество_свободных_мест > 0 
         ORDER BY Дата_поездки ASC";
 
 $stmt = $pdo->prepare($sql);
@@ -44,7 +44,7 @@ $trips = $stmt->fetchAll(PDO::FETCH_ASSOC);
                         <td><?= htmlspecialchars($trip['Место_отправки']) ?></td>
                         <td><?= htmlspecialchars($trip['Место_назначения']) ?></td>
                         <td><?= htmlspecialchars($trip['Дата_поездки']) ?></td>
-                        <td><?= htmlspecialchars($trip['Колличество_свободных_мест']) ?></td>
+                        <td><?= htmlspecialchars($trip['Количество_свободных_мест']) ?></td>
                         <td><?= htmlspecialchars($trip['Цена_поездки']) ?> ₽</td>
                         <td>
                             <a href="trip_details.php?id=<?= $trip['ID_поездки'] ?>">Посмотреть</a>

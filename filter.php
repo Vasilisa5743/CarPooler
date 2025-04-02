@@ -9,7 +9,7 @@ $date = isset($_GET['date']) ? $_GET['date'] : null;
 $seats = isset($_GET['seats']) ? (int)$_GET['seats'] : null;
 
 // Формируем SQL-запрос с учетом параметров фильтрации
-$sql = "SELECT * FROM поездки WHERE Колличество_свободных_мест > 0";
+$sql = "SELECT * FROM поездки WHERE Количество_свободных_мест > 0";
 
 $params = [];
 $conditions = [];
@@ -25,7 +25,7 @@ if (!empty($date)) {
 }
 
 if (!empty($seats)) {
-    $conditions[] = "Колличество_свободных_мест >= :seats";
+    $conditions[] = "Количество_свободных_мест >= :seats";
     $params[':seats'] = $seats;
 }
 
@@ -75,7 +75,7 @@ $trips = $stmt->fetchAll(PDO::FETCH_ASSOC);
                         <p><strong>Дата:</strong> <?= htmlspecialchars($trip['Дата_поездки']) ?></p>
 
                         <!-- Количество свободных мест -->
-                        <p><strong>Свободные места:</strong> <?= htmlspecialchars($trip['Колличество_свободных_мест']) ?></p>
+                        <p><strong>Свободные места:</strong> <?= htmlspecialchars($trip['Количество_свободных_мест']) ?></p>
 
                         <!-- Цена -->
                         <p><strong>Цена:</strong> <?= htmlspecialchars($trip['Цена_поездки']) ?> ₽</p>

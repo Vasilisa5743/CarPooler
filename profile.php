@@ -9,7 +9,6 @@ if (!isset($_SESSION['user_id'])) {
     exit;
 }
 
-// Получаем данные пользователя
 $user_id = $_SESSION['user_id'];
 $role_id = $_SESSION['role_id'];
 
@@ -23,11 +22,15 @@ try {
         throw new Exception('Пользователь не найден.');
     }
 
-    // Если роль "Водитель", получаем информацию из таблицы "Водители"
+    // Если роль "Водитель", получаем информацию из таблицы "Водители" и список созданных поездок
     if ($role_id == 2) {
         $stmt = $pdo->prepare("SELECT * FROM Водители WHERE ID_пользователя = :user_id");
         $stmt->execute(['user_id' => $user_id]);
         $driver = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        if (!$driver) {
+            throw new Exception('Водитель не найден.');
+        }
 
         // Созданные поездки водителя
         $stmt = $pdo->prepare("SELECT * FROM Поездки WHERE ID_водителя = :driver_id ORDER BY Дата_поездки DESC");
@@ -35,20 +38,24 @@ try {
         $trips = $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
-    // Если роль "Пассажир", получаем информацию из таблицы "Пассажиры"
+    // Если роль "Пассажир", получаем информацию из таблицы "Пассажиры" и список забронированных поездок
     if ($role_id == 1) {
         $stmt = $pdo->prepare("SELECT * FROM Пассажиры WHERE ID_пользователя = :user_id");
         $stmt->execute(['user_id' => $user_id]);
         $passenger = $stmt->fetch(PDO::FETCH_ASSOC);
 
+        if (!$passenger) {
+            throw new Exception('Пассажир не найден.');
+        }
+
         // Забронированные поездки пассажира
         $stmt = $pdo->prepare("
-            SELECT Поездки.* 
+            SELECT Поездки. * 
             FROM Бронирование 
             JOIN Поездки ON Бронирование.ID_поездки = Поездки.ID_поездки 
-            WHERE Бронирование.ID_пассажира = :user_id
+            WHERE Бронирование.ID_пассажира = :passenger_id
         ");
-        $stmt->execute(['user_id' => $user_id]);
+        $stmt->execute(['passenger_id' => $passenger['ID_пассажира']]);
         $bookings = $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 } catch (PDOException $e) {
@@ -75,6 +82,7 @@ try {
                         <p><strong>Роль:</strong>
                             <?= ($role_id == 1) ? 'Пассажир' : (($role_id == 2) ? 'Водитель' : 'Неизвестная роль') ?>
                         </p>
+
                         <?php if ($role_id == 2): ?>
                             <p><strong>ФИО:</strong> <?= htmlspecialchars($driver['ФИО'] ?? 'Не указано') ?></p>
                             <p><strong>Телефон:</strong> <?= htmlspecialchars($driver['Номер_телефона'] ?? 'Не указано') ?></p>
@@ -84,8 +92,9 @@ try {
                         <?php endif; ?>
                     </div>
 
-                    <!-- Форма редактирования профиля (скрыта по умолчанию) -->
-                    <div id="edit-form" style="display: none;">
+                    <!-- Форма редактирования профиля -->
+                    <button id="edit-profile-button" class="btn btn-outline-primary w-100 mt-3">Редактировать профиль</button>
+                    <div id="edit-profile-form" style="display: none;">
                         <form method="POST" action="update_profile.php" class="needs-validation" novalidate>
                             <input type="hidden" name="user_id" value="<?= htmlspecialchars($user_id) ?>">
                             <div class="mb-3">
@@ -127,29 +136,7 @@ try {
                         </form>
                     </div>
 
-                    <!-- Кнопка редактирования -->
-                    <button id="edit-button" class="btn btn-outline-primary w-100 mt-3">Редактировать профиль</button>
-
-                    <!-- Модальное окно -->
-                    <div class="modal fade" id="confirmModal" tabindex="-1" aria-hidden="true">
-                        <div class="modal-dialog">
-                            <div class="modal-content">
-                                <div class="modal-header">
-                                    <h5 class="modal-title">Подтверждение</h5>
-                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                                </div>
-                                <div class="modal-body">
-                                    Вы уверены, что хотите сохранить изменения?
-                                </div>
-                                <div class="modal-footer">
-                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
-                                    <button type="submit" class="btn btn-primary" id="confirmSave">Сохранить</button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Информация о поездках -->
+                    <!-- Список созданных поездок (для водителей) -->
                     <?php if ($role_id == 2 && !empty($trips)): ?>
                         <h3 class="mt-5">Созданные поездки</h3>
                         <div class="row row-cols-1 row-cols-md-2 g-4">
@@ -159,14 +146,25 @@ try {
                                         <div class="card-body">
                                             <h5 class="card-title"><?= htmlspecialchars($trip['Место_отправки']) ?> → <?= htmlspecialchars($trip['Место_назначения']) ?></h5>
                                             <p class="card-text"><strong>Дата:</strong> <?= htmlspecialchars($trip['Дата_поездки']) ?></p>
-                                            <p class="card-text"><strong>Места:</strong> <?= htmlspecialchars($trip['Колличество_свободных_мест']) ?></p>
+                                            <p class="card-text"><strong>Места:</strong> <?= htmlspecialchars($trip['Количество_свободных_мест']) ?></p>
                                             <p class="card-text"><strong>Цена:</strong> <?= htmlspecialchars($trip['Цена_поездки']) ?> ₽</p>
+
+                                            <!-- Кнопки редактирования и удаления -->
+                                            <div class="d-grid gap-2">
+                                                <a href="edit_trip.php?id=<?= htmlspecialchars($trip['ID_поездки']) ?>" class="btn btn-warning">Редактировать</a>
+                                                <a href="delete_trip.php?id=<?= htmlspecialchars($trip['ID_поездки']) ?>" class="btn btn-danger">Удалить</a>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
                             <?php endforeach; ?>
                         </div>
-                    <?php elseif ($role_id == 1 && !empty($bookings)): ?>
+                    <?php elseif ($role_id == 2): ?>
+                        <p class="text-center text-muted mt-3">У вас пока нет созданных поездок.</p>
+                    <?php endif; ?>
+
+                    <!-- Список забронированных поездок (для пассажиров) -->
+                    <?php if ($role_id == 1 && !empty($bookings)): ?>
                         <h3 class="mt-5">Забронированные поездки</h3>
                         <div class="row row-cols-1 row-cols-md-2 g-4">
                             <?php foreach ($bookings as $booking): ?>
@@ -181,6 +179,8 @@ try {
                                 </div>
                             <?php endforeach; ?>
                         </div>
+                    <?php elseif ($role_id == 1): ?>
+                        <p class="text-center text-muted mt-3">У вас пока нет забронированных поездок.</p>
                     <?php endif; ?>
                 </div>
             </div>
@@ -193,9 +193,9 @@ try {
 <!-- Bootstrap JS and dependencies -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 <script>
-    // Показываем/скрываем форму редактирования
-    document.getElementById('edit-button').addEventListener('click', function () {
-        const editForm = document.getElementById('edit-form');
+    // Показываем/скрываем форму редактирования профиля
+    document.getElementById('edit-profile-button').addEventListener('click', function () {
+        const editForm = document.getElementById('edit-profile-form');
         const profileInfo = document.getElementById('profile-info');
 
         if (editForm.style.display === 'none') {
@@ -209,18 +209,18 @@ try {
         }
     });
 
-    // Инициализация модального окна
-    document.querySelector('.needs-validation').addEventListener('submit', function (event) {
-        event.preventDefault(); // Предотвращаем отправку формы
-
-        // Показываем модальное окно
-        var modal = new bootstrap.Modal(document.getElementById('confirmModal'));
-        modal.show();
-
-        // Обработка нажатия на кнопку "Сохранить" в модальном окне
-        document.getElementById('confirmSave').addEventListener('click', function () {
-            // Отправляем форму
-            document.querySelector('.needs-validation').submit();
+    // Валидация формы Bootstrap
+    (function () {
+        'use strict';
+        var forms = document.querySelectorAll('.needs-validation');
+        Array.prototype.slice.call(forms).forEach(function (form) {
+            form.addEventListener('submit', function (event) {
+                if (!form.checkValidity()) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                }
+                form.classList.add('was-validated');
+            }, false);
         });
-    });
+    })();
 </script>

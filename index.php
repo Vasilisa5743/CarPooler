@@ -10,7 +10,7 @@ $date = isset($_GET['date']) ? $_GET['date'] : null;
 $seats = isset($_GET['seats']) ? (int)$_GET['seats'] : null;
 
 // Формируем SQL-запрос
-$sql = "SELECT * FROM Поездки WHERE Колличество_свободных_мест > 0";
+$sql = "SELECT * FROM Поездки WHERE Количество_свободных_мест > 0";
 $stmt = $pdo->prepare($sql);
 $stmt->execute();
 $trips = $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -39,7 +39,7 @@ if (!empty($date)) {
 }
 
 if (!empty($seats)) {
-    $conditions[] = "Колличество_свободных_мест >= :seats";
+    $conditions[] = "Количество_свободных_мест >= :seats";
     $params[':seats'] = $seats;
 }
 
@@ -108,7 +108,7 @@ $trips = $stmt->fetchAll(PDO::FETCH_ASSOC);
                         <div class="card-body">
                             <h5 class="card-title"><?= htmlspecialchars($trip['Место_отправки']) ?> → <?= htmlspecialchars($trip['Место_назначения']) ?></h5>
                             <p class="card-text"><strong>Дата:</strong> <?= htmlspecialchars($trip['Дата_поездки']) ?></p>
-                            <p class="card-text"><strong>Свободные места:</strong> <?= htmlspecialchars($trip['Колличество_свободных_мест']) ?></p>
+                            <p class="card-text"><strong>Свободные места:</strong> <?= htmlspecialchars($trip['Количество_свободных_мест']) ?></p>
                             <p class="card-text"><strong>Цена:</strong> <?= htmlspecialchars($trip['Цена_поездки']) ?> ₽</p>
                             <div class="d-grid gap-2">
                                 <?php if (isset($_SESSION['user_id'])) : ?>

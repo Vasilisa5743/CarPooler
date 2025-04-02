@@ -44,7 +44,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     ID_водителя,
                     Место_отправки,
                     Место_назначения,
-                    Колличество_свободных_мест,
+                    Количество_свободных_мест,
                     Цена_поездки,
                     Дата_поездки
                 ) VALUES (:driver_id, :departure, :destination, :seats, :price, :date)");
