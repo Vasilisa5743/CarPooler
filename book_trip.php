@@ -40,37 +40,57 @@ try {
         throw new Exception('Пассажир не найден.');
     }
 
-    // Проверяем, не забронировано ли место этим пассажиром ранее
+    // Проверяем, не отправлена ли уже заявка на эту поездку
     $stmt = $pdo->prepare("SELECT COUNT(*) FROM Бронирование WHERE ID_поездки = :trip_id AND ID_пассажира = :passenger_id");
     $stmt->execute(['trip_id' => $trip_id, 'passenger_id' => $passenger_id]);
     $count = $stmt->fetchColumn();
 
     if ($count > 0) {
-        throw new Exception('Вы уже забронировали место в этой поездке.');
+        throw new Exception('Вы уже отправили заявку на эту поездку.');
     }
 
-    // Добавляем запись в таблицу "бронирование"
-    $stmt = $pdo->prepare("INSERT INTO Бронирование (ID_поездки, ID_водителя, ID_пассажира, Место_отправки, Дата_поездки, Дата_бронирования) 
-                          VALUES (:trip_id, :driver_id, :passenger_id, :departure, :trip_date, NOW())");
+    // Получаем данные из формы
+    $waiting_place = trim($_POST['waiting_place']);
+
+    if (empty($waiting_place)) {
+        throw new Exception('Укажите место ожидания.');
+    }
+
+    // Создаём запись в таблице "бронирование" со статусом "ожидание" (0)
+    $stmt = $pdo->prepare("
+        INSERT INTO Бронирование (
+            ID_поездки,
+            ID_водителя,
+            ID_пассажира,
+            Место_отправки,
+            Дата_поездки,
+            Дата_бронирования,
+            Статус
+        ) VALUES (
+            :trip_id,
+            :driver_id,
+            :passenger_id,
+            :waiting_place,
+            :trip_date,
+            NOW(),
+            0
+        )
+    ");
 
     $stmt->execute([
         'trip_id' => $trip_id,
         'driver_id' => $trip['ID_водителя'],
         'passenger_id' => $passenger_id,
-        'departure' => $trip['Место_отправки'],
+        'waiting_place' => $waiting_place,
         'trip_date' => $trip['Дата_поездки']
     ]);
-
-    // Уменьшаем количество свободных мест в таблице "поездки"
-    $stmt = $pdo->prepare("UPDATE Поездки SET Количество_свободных_мест = Количество_свободных_мест - 1 WHERE ID_поездки = :trip_id");
-    $stmt->execute(['trip_id' => $trip_id]);
 
     // Фиксируем транзакцию
     $pdo->commit();
 
-    $_SESSION['success'] = 'Место успешно забронировано!';
+    $_SESSION['success'] = 'Заявка на бронирование успешно отправлена!';
 } catch (PDOException $e) {
-    // Откатываем транзакцию при ошибке
+    // Откатываем транзакцию при ошибке базы данных
     $pdo->rollBack();
     $_SESSION['error'] = 'Ошибка бронирования: ' . $e->getMessage();
 } catch (Exception $e) {

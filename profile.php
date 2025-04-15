@@ -36,6 +36,18 @@ try {
         $stmt = $pdo->prepare("SELECT * FROM Поездки WHERE ID_водителя = :driver_id ORDER BY Дата_поездки DESC");
         $stmt->execute(['driver_id' => $driver['ID_водителя']]);
         $trips = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        // Список заявок на бронирование для каждой поездки
+        foreach ($trips as &$trip) {
+            $stmt = $pdo->prepare("
+                SELECT Бронирование.*, Пассажиры.ФИО AS Пассажир_фамилия 
+                FROM Бронирование 
+                JOIN Пассажиры ON Бронирование.ID_пассажира = Пассажиры.ID_пассажира 
+                WHERE Бронирование.ID_поездки = :trip_id
+            ");
+            $stmt->execute(['trip_id' => $trip['ID_поездки']]);
+            $trip['Заявки'] = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        }
     }
 
     // Если роль "Пассажир", получаем информацию из таблицы "Пассажиры" и список забронированных поездок
@@ -50,7 +62,7 @@ try {
 
         // Забронированные поездки пассажира
         $stmt = $pdo->prepare("
-            SELECT Поездки. * 
+            SELECT Бронирование.*, Поездки.*  
             FROM Бронирование 
             JOIN Поездки ON Бронирование.ID_поездки = Поездки.ID_поездки 
             WHERE Бронирование.ID_пассажира = :passenger_id
@@ -136,29 +148,46 @@ try {
                         </form>
                     </div>
 
-                    <!-- Список созданных поездок (для водителей) -->
+                    <!-- Список созданных поездок и заявок (для водителей) -->
                     <?php if ($role_id == 2 && !empty($trips)): ?>
                         <h3 class="mt-5">Созданные поездки</h3>
-                        <div class="row row-cols-1 row-cols-md-2 g-4">
-                            <?php foreach ($trips as $trip): ?>
-                                <div class="col">
-                                    <div class="card shadow-sm h-100">
-                                        <div class="card-body">
-                                            <h5 class="card-title"><?= htmlspecialchars($trip['Место_отправки']) ?> → <?= htmlspecialchars($trip['Место_назначения']) ?></h5>
-                                            <p class="card-text"><strong>Дата:</strong> <?= htmlspecialchars($trip['Дата_поездки']) ?></p>
-                                            <p class="card-text"><strong>Места:</strong> <?= htmlspecialchars($trip['Количество_свободных_мест']) ?></p>
-                                            <p class="card-text"><strong>Цена:</strong> <?= htmlspecialchars($trip['Цена_поездки']) ?> ₽</p>
+                        <?php foreach ($trips as $trip): ?>
+                            <div class="card shadow-sm mb-3">
+                                <div class="card-body">
+                                    <h5 class="card-title"><?= htmlspecialchars($trip['Место_отправки']) ?> → <?= htmlspecialchars($trip['Место_назначения']) ?></h5>
+                                    <p class="card-text"><strong>Дата:</strong> <?= htmlspecialchars($trip['Дата_поездки']) ?></p>
+                                    <p class="card-text"><strong>Места:</strong> <?= htmlspecialchars($trip['Количество_свободных_мест']) ?></p>
+                                    <p class="card-text"><strong>Цена:</strong> <?= htmlspecialchars($trip['Цена_поездки']) ?> ₽</p>
 
-                                            <!-- Кнопки редактирования и удаления -->
-                                            <div class="d-grid gap-2">
-                                                <a href="edit_trip.php?id=<?= htmlspecialchars($trip['ID_поездки']) ?>" class="btn btn-warning">Редактировать</a>
-                                                <a href="delete_trip.php?id=<?= htmlspecialchars($trip['ID_поездки']) ?>" class="btn btn-danger">Удалить</a>
-                                            </div>
-                                        </div>
-                                    </div>
+                                    <!-- Список заявок на бронирование -->
+                                    <?php if (!empty($trip['Заявки'])): ?>
+                                        <h4 class="mt-3">Заявки на бронирование</h4>
+                                        <ul class="list-group">
+                                            <?php foreach ($trip['Заявки'] as $request): ?>
+                                                <li class="list-group-item d-flex justify-content-between align-items-center">
+                                                    <span>
+                                                        <strong>Пассажир:</strong> <?= htmlspecialchars($request['Пассажир_фамилия']) ?><br>
+                                                        <strong>Место ожидания:</strong> <?= htmlspecialchars($request['Место_отправки']) ?><br>
+                                                        <strong>Статус:</strong>
+                                                        <?= $request['Статус'] == 0 ? 'Ожидает подтверждения' :
+                                                            ($request['Статус'] == 1 ? 'Принята' : 'Отклонена') ?>
+                                                    </span>
+                                                    <div>
+                                                        <!-- Кнопки "Принять" и "Отклонить" -->
+                                                        <?php if ($request['Статус'] == 0): ?>
+                                                            <a href="accept_request.php?id=<?= htmlspecialchars($request['ID_бронирования']) ?>" class="btn btn-success me-2">Принять</a>
+                                                            <a href="decline_request.php?id=<?= htmlspecialchars($request['ID_бронирования']) ?>" class="btn btn-danger">Отклонить</a>
+                                                        <?php endif; ?>
+                                                    </div>
+                                                </li>
+                                            <?php endforeach; ?>
+                                        </ul>
+                                    <?php else: ?>
+                                        <p class="text-muted mt-3">У этой поездки пока нет заявок.</p>
+                                    <?php endif; ?>
                                 </div>
-                            <?php endforeach; ?>
-                        </div>
+                            </div>
+                        <?php endforeach; ?>
                     <?php elseif ($role_id == 2): ?>
                         <p class="text-center text-muted mt-3">У вас пока нет созданных поездок.</p>
                     <?php endif; ?>
@@ -174,6 +203,10 @@ try {
                                             <h5 class="card-title"><?= htmlspecialchars($booking['Место_отправки']) ?> → <?= htmlspecialchars($booking['Место_назначения']) ?></h5>
                                             <p class="card-text"><strong>Дата:</strong> <?= htmlspecialchars($booking['Дата_поездки']) ?></p>
                                             <p class="card-text"><strong>Цена:</strong> <?= htmlspecialchars($booking['Цена_поездки']) ?> ₽</p>
+                                            <p class="card-text"><strong>Статус:</strong>
+                                                <?= ($booking['Статус'] == 0) ? 'Ожидает подтверждения' :
+                                                    ($booking['Статус'] == 1 ? 'Принята' : 'Отклонена') ?>
+                                            </p>
                                         </div>
                                     </div>
                                 </div>
